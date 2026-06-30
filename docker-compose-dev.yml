@@ -10,13 +10,13 @@ services:
     restart: always
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
-      start_period: 1m30s
-      interval: 1m
+      interval: 5s
       timeout: 15s
-      retries: 10
+      retries: 30
 
   dev-database:
     build: docker/dev-db/
+    image: wp1bot-db-dev
     container_name: wp1bot-db-dev
     ports:
       - 6300:3306
@@ -41,10 +41,9 @@ services:
     restart: always
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
-      start_period: 30s
-      interval: 30s
+      interval: 5s
       timeout: 10s
-      retries: 5
+      retries: 30
 
   createbuckets:
     image: minio/mc
@@ -62,6 +61,7 @@ services:
     build:
       context: .
       dockerfile: docker/dev-workers/Dockerfile
+    image: wp1bot-workers-dev
     container_name: wp1bot-workers-dev
     volumes:
       - ./wp1:/usr/src/app/wp1/
@@ -82,6 +82,7 @@ services:
     build:
       context: .
       dockerfile: docker/web/Dockerfile
+    image: wp1bot-web-dev
     container_name: wp1bot-web-dev
     environment:
       - FLASK_DEBUG=1
@@ -105,6 +106,7 @@ services:
     build:
       context: .
       dockerfile: docker/dev-frontend/Dockerfile
+    image: wp1bot-frontend-dev
     container_name: wp1bot-frontend-dev
     environment:
       - VITE_API_URL=http://localhost:5000/v1
@@ -154,12 +156,21 @@ services:
       JWT_SECRET: DH8kSxcflUVfNRdkEiJJCn2dOOKI3qfw
       POSTGRES_URI: postgresql+psycopg://zimfarm:zimpass@zimfarm-db:5432/zimfarm
       ALEMBIC_UPGRADE_HEAD_ON_START: true
+      DEBUG: true
       INIT_USERNAME: admin
       INIT_PASSWORD: admin
       ALLOWED_ORIGINS: http://localhost:8003
       ARTIFACTS_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-artifacts
       LOGS_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-logs
       ZIM_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-zims
+      OAUTH_JWKS_URI: https://ory.login-staging.kiwix.org/.well-known/jwks.json
+      OAUTH_ISSUER: https://ory.login-staging.kiwix.org
+      OAUTH_OIDC_CLIENT_ID: 38302485-7f3d-4e88-b1b3-ec02fb92ec8c
+      OAUTH_OIDC_LOGIN_REQUIRE_2FA: true
+      OAUTH_SESSION_AUDIENCE_ID: 309693e7-ad5e-4379-bf93-ba89314230fd
+      OAUTH_SESSION_LOGIN_REQUIRE_2FA: true
+      CREATE_NEW_OAUTH_ACCOUNT: false
+      AUTH_MODES: local,oauth-session
     networks:
       - wp1bot-dev
     depends_on:

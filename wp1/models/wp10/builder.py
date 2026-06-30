@@ -2,16 +2,18 @@ import datetime
 import json
 import logging
 import uuid
+from typing import Any
 
 import attr
 
+from wp1.logic import util as logic_util
 from wp1.constants import TS_FORMAT_WP10
 from wp1.timestamp import utcnow
 
 logger = logging.getLogger(__name__)
 
 
-def builder_id():
+def builder_id() -> bytes:
     return str(uuid.uuid4()).encode("utf-8")
 
 
@@ -19,61 +21,92 @@ def builder_id():
 class Builder:
     table_name = "builders"
 
-    b_name = attr.ib()
-    b_user_id = attr.ib()
-    b_project = attr.ib()
-    b_model = attr.ib()
-    b_params = attr.ib()
+    b_name: bytes = attr.ib()
+    b_user_id: bytes = attr.ib()
+    b_project: bytes = attr.ib()
+    b_model: bytes = attr.ib()
+    b_params: bytes = attr.ib()
     # Needs to be set before insertion into the database
-    b_id = attr.ib(default=None)
-    b_created_at = attr.ib(default=None)
-    b_updated_at = attr.ib(default=None)
-    b_current_version = attr.ib(default=0)
-    b_selection_zim_version = attr.ib(default=0)
+    # contains a UUID v4 string encoded as UTF-8 bytes.
+    b_id: bytes | None = attr.ib(default=None)
+    b_created_at: bytes | None = attr.ib(default=None)
+    b_updated_at: bytes | None = attr.ib(default=None)
+    b_current_version: int = attr.ib(default=0)
+    b_selection_zim_version: int = attr.ib(default=0)
 
     @property
-    def created_at_dt(self):
+    def id(self) -> str:
+        return logic_util.as_text(self.b_id)
+
+    @property
+    def name(self) -> str:
+        return logic_util.as_text(self.b_name)
+
+    @property
+    def user_id(self) -> str:
+        return logic_util.as_text(self.b_user_id)
+
+    @property
+    def project(self) -> str:
+        return logic_util.as_text(self.b_project)
+
+    @property
+    def model(self) -> str:
+        return logic_util.as_text(self.b_model)
+
+    @property
+    def label(self) -> str:
+        if self.b_name is not None:
+            return f"{self.name} ({self.id})"
+        return self.id
+
+    @property
+    def created_at_dt(self) -> datetime.datetime:
         """The timestamp parsed into a datetime.datetime object."""
+        if self.b_created_at is None:
+            raise ValueError("b_created_at is not set")
         return datetime.datetime.strptime(
             self.b_created_at.decode("utf-8"), TS_FORMAT_WP10
         )
 
-    def set_created_at_dt(self, dt):
+    def set_created_at_dt(self, dt: datetime.datetime | None) -> None:
         """Sets the created_at field using a datetime.datetime object"""
         if dt is None:
             logger.warning("Attempt to set selection created_at to None ignored")
             return
         self.b_created_at = dt.strftime(TS_FORMAT_WP10).encode("utf-8")
 
-    def set_created_at_now(self):
+    def set_created_at_now(self) -> None:
         """Sets the created_at field to a timestamp that is equal to now"""
         self.set_created_at_dt(utcnow())
 
     @property
-    def updated_at_dt(self):
+    def updated_at_dt(self) -> datetime.datetime:
         """The timestamp parsed into a datetime.datetime object."""
+        if self.b_updated_at is None:
+            raise ValueError("b_updated_at is not set")
         return datetime.datetime.strptime(
             self.b_updated_at.decode("utf-8"), TS_FORMAT_WP10
         )
 
-    def set_updated_at_dt(self, dt):
+    def set_updated_at_dt(self, dt: datetime.datetime | None) -> None:
         """Sets the updated_at field using a datetime.datetime object"""
         if dt is None:
             logger.warning("Attempt to set selection updated_at to None ignored")
             return
         self.b_updated_at = dt.strftime(TS_FORMAT_WP10).encode("utf-8")
 
-    def set_updated_at_now(self):
+    def set_updated_at_now(self) -> None:
         """Sets the updated_at field to a timestamp that is equal to now"""
         self.set_updated_at_dt(utcnow())
 
-    def to_web_dict(self):
+    def to_web_dict(self) -> dict[str, Any]:
         return {
-            "name": self.b_name.decode("utf-8"),
-            "project": self.b_project.decode("utf-8"),
+            "name": self.name,
+            "project": self.project,
             "params": json.loads(self.b_params.decode("utf-8")),
-            "model": self.b_model.decode("utf-8"),
+            "model": self.model,
         }
 
-    def set_id(self):
+    def set_id(self) -> None:
         self.b_id = builder_id()

@@ -834,12 +834,10 @@ class BuilderTest(BaseWpOneDbTest):
     def test_latest_zim_file_url_for(self, mock_zimfarm_url_for):
         builder_id = self._insert_builder_with_multiple_version_selections()
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                '''UPDATE zim_tasks z
+            cursor.execute('''UPDATE zim_tasks z
                           INNER JOIN selections s ON s.s_id = z.z_selection_id
                           INNER JOIN builders b ON b.b_selection_zim_version = s.s_version
-                        SET z_status = "FILE_READY"'''
-            )
+                        SET z_status = "FILE_READY"''')
 
         actual = logic_builder.latest_zim_file_url_for(self.wp10db, builder_id)
 
@@ -1017,7 +1015,7 @@ class BuilderTest(BaseWpOneDbTest):
 
         self.assertTrue(actual["db_delete_success"])
         self.assertTrue(actual["rq_cancel_success"])
-        mock_cancel_job.assert_called_once_with(ANY, b"rq_job_456")
+        mock_cancel_job.assert_called_once_with(ANY, "rq_job_456")
         mock_delete_schedule.assert_called_once_with(ANY, builder_id)
 
     def test_latest_selections_with_errors(self):
@@ -1164,7 +1162,7 @@ class BuilderTest(BaseWpOneDbTest):
         "wp1.logic.builder.utcnow",
         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2),
     )
-    @patch("wp1.logic.builder.zimfarm.get_zimfarm_token", return_value="test_token")
+    @patch("wp1.logic.builder.zimfarm.token_provider", return_value="test_token")
     def test_handle_zim_generation_long_title(
         self, mock_utcnow, mock_get_zimfarm_token
     ):
@@ -1506,13 +1504,11 @@ class BuilderTest(BaseWpOneDbTest):
         )
 
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                """UPDATE zim_tasks z
+            cursor.execute("""UPDATE zim_tasks z
                         JOIN selections s
                           ON s.s_id = z.z_selection_id
                         SET z.z_status = "REQUESTED"
-                        WHERE s.s_id IN (2,3)"""
-            )
+                        WHERE s.s_id IN (2,3)""")
         logic_builder.auto_handle_zim_generation(redis, self.wp10db, builder_id)
 
         mock_cancel_zim.assert_has_calls(
@@ -1568,13 +1564,11 @@ class BuilderTest(BaseWpOneDbTest):
         )
 
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                """UPDATE zim_tasks z
+            cursor.execute("""UPDATE zim_tasks z
                         JOIN selections s
                           ON s.s_id = z.z_selection_id
                         SET z.z_status = "REQUESTED"
-                        WHERE s.s_id IN (2,3)"""
-            )
+                        WHERE s.s_id IN (2,3)""")
 
         tasks = logic_builder.pending_zim_tasks_for(self.wp10db, builder_id)
         self.assertIsNotNone(tasks)
@@ -1796,11 +1790,11 @@ class BuilderTest(BaseWpOneDbTest):
 
         mock_request_zimfarm_task.return_value = "test_task_id_no_selection"
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(ObjectNotFoundError):
             logic_builder.request_zim_file_task_for_builder(
                 redis=redis_mock,
                 wp10db=self.wp10db,
-                builder=self.builder.b_id,
+                builder=self.builder,
                 zim_schedule_id=b"schedule_123",
             )
 
@@ -1833,7 +1827,7 @@ class BuilderTest(BaseWpOneDbTest):
         self, mock_utcnow, mock_request_zimfarm_task
     ):
         """
-        Ensure the existing zim_task is updated (not dupplicated) when the selection version changes.
+        Ensure the existing zim_task is updated (not duplicated) when the selection version changes.
         """
         self._insert_builder()
         zim_schedule_id = self._setup_failed_zim_regeneration_scenario(

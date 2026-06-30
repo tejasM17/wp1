@@ -12,10 +12,12 @@ import VueRouter from 'vue-router';
 import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
 import BookBuilder from './components/BookBuilder.vue';
+import CombinatorBuilder from './components/CombinatorBuilder.vue';
 import PetscanBuilder from './components/PetscanBuilder.vue';
 import SimpleBuilder from './components/SimpleBuilder.vue';
 import SparqlBuilder from './components/SparqlBuilder.vue';
 import ComparePage from './components/ComparePage.vue';
+import AssessmentsByProject from './components/AssessmentsByProject.vue';
 import IndexPage from './components/IndexPage.vue';
 import MyLists from './components/MyLists.vue';
 import ProjectPage from './components/ProjectPage.vue';
@@ -93,6 +95,13 @@ const routes = [
     },
   },
   {
+    path: '/assessments/',
+    component: AssessmentsByProject,
+    meta: {
+      title: () => BASE_TITLE + ' - Assessments by Project',
+    },
+  },
+  {
     path: '/selections/user',
     component: MyLists,
     meta: {
@@ -135,6 +144,13 @@ const routes = [
     },
   },
   {
+    path: '/selections/combinator',
+    component: CombinatorBuilder,
+    meta: {
+      title: () => BASE_TITLE + ' - Create Combinator Selection',
+    },
+  },
+  {
     path: '/selections/simple/:builder_id',
     component: SimpleBuilder,
     meta: {
@@ -167,6 +183,13 @@ const routes = [
     component: WikiProjectBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Edit WikiProject Selection',
+    },
+  },
+  {
+    path: '/selections/combinator/:builder_id',
+    component: CombinatorBuilder,
+    meta: {
+      title: () => BASE_TITLE + ' - Edit Combinator Selection',
     },
   },
   {

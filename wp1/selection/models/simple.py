@@ -1,6 +1,7 @@
 import urllib.parse
+from typing import Any
 
-from wp1.exceptions import Wp1FatalSelectionError, Wp1RetryableSelectionError
+from wp1.exceptions import Wp1FatalSelectionError
 from wp1.selection.abstract_builder import AbstractBuilder
 
 
@@ -25,22 +26,21 @@ class Builder(AbstractBuilder):
     MAX_LIST_SIZE = 1024 * 1024 * 10  # 10 MB
     MAX_LIST_DESC = "10 MB"
 
-    def build(self, content_type, **params):
+    def build(self, content_type: str, **params: Any) -> bytes:
         if content_type != "text/tab-separated-values":
             raise Wp1FatalSelectionError("Unrecognized content type")
         if "list" not in params:
             raise Wp1FatalSelectionError("Missing required param: list")
 
-        valid, invalid, errors = self.validate(**params)
-
-        if errors:
-            raise Wp1RetryableSelectionError(
-                "The selection contained invalid parameters"
-            )
+        # Validation errors are handled by AbstractBuilder.materialize before
+        # build is called; validate is used here only to normalize the list.
+        valid, _, _ = self.validate(**params)
 
         return "\n".join(valid).encode("utf-8")
 
-    def validate(self, **params):
+    def validate(
+        self, **params: Any
+    ) -> tuple[list[str] | str, list[str] | str, list[str]]:
         if not params["list"]:
             return ([], [], ["Empty List"])
         if len(("").join(params["list"])) > self.MAX_LIST_SIZE:
